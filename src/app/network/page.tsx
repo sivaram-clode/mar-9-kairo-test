@@ -24,7 +24,7 @@ interface PendingItem {
 }
 
 export default function NetworkPage() {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const router = useRouter();
   const [connections, setConnections] = useState<ConnectionItem[]>([]);
   const [pending, setPending] = useState<PendingItem[]>([]);

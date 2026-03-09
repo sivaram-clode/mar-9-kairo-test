@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import SessionProvider from "@/components/SessionProvider";
+import Navbar from "@/components/nav/Navbar";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -29,7 +30,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <SessionProvider>{children}</SessionProvider>
+        <SessionProvider>
+          <Navbar />
+          <main>{children}</main>
+        </SessionProvider>
       </body>
     </html>
   );
