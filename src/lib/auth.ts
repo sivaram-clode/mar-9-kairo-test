@@ -20,27 +20,32 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          throw new Error("Email and password are required");
+          return null;
         }
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-        });
+        try {
+          const user = await prisma.user.findUnique({
+            where: { email: credentials.email },
+          });
 
-        if (!user) {
-          throw new Error("No user found with this email");
+          if (!user) {
+            return null;
+          }
+
+          const isValid = await compare(credentials.password, user.password);
+          if (!isValid) {
+            return null;
+          }
+
+          return {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+          };
+        } catch (error) {
+          console.error("Authorize error:", error);
+          return null;
         }
-
-        const isValid = await compare(credentials.password, user.password);
-        if (!isValid) {
-          throw new Error("Invalid password");
-        }
-
-        return {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-        };
       },
     }),
     ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
@@ -52,6 +57,34 @@ export const authOptions: NextAuthOptions = {
         ]
       : []),
   ],
+  // Trust the Host header — required behind reverse proxies (Cloudflare Tunnel, etc.)
+  // In NextAuth v4 this is undocumented but works; also set NEXTAUTH_URL correctly.
+  ...(process.env.NEXTAUTH_TRUST_HOST === "true" && {
+    cookies: {
+      sessionToken: {
+        name: process.env.NODE_ENV === "production"
+          ? "__Secure-next-auth.session-token"
+          : "next-auth.session-token",
+        options: {
+          httpOnly: true,
+          sameSite: "lax" as const,
+          path: "/",
+          secure: process.env.NODE_ENV === "production",
+        },
+      },
+      csrfToken: {
+        name: process.env.NODE_ENV === "production"
+          ? "__Host-next-auth.csrf-token"
+          : "next-auth.csrf-token",
+        options: {
+          httpOnly: true,
+          sameSite: "lax" as const,
+          path: "/",
+          secure: process.env.NODE_ENV === "production",
+        },
+      },
+    },
+  }),
   callbacks: {
     async jwt({ token, user }) {
       if (user) {

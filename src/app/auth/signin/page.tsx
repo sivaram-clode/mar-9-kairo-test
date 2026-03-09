@@ -27,7 +27,11 @@ function SignInForm() {
 
     setLoading(false);
     if (res?.error) {
-      setError(res.error);
+      setError(
+        res.error === "CredentialsSignin"
+          ? "Invalid email or password"
+          : res.error
+      );
     } else if (res?.ok) {
       router.push(callbackUrl);
       router.refresh();
