@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useEffect, useState, Suspense } from "react";
 import UserCard from "@/components/search/UserCard";
+import { SearchSkeleton } from "@/components/ui/Skeleton";
 
 interface UserResult {
   id: string;
@@ -33,32 +34,32 @@ function SearchResults() {
 
   if (!q) {
     return (
-      <div className="text-center py-16 text-gray-500">
-        Enter a search term to find people.
+      <div className="bg-white rounded-lg shadow-card p-12 text-center">
+        <div className="text-5xl mb-4">🔍</div>
+        <h3 className="text-lg font-semibold text-linkedin-text mb-1">Search for people</h3>
+        <p className="text-sm text-linkedin-text-secondary">Use the search bar to find people by name, headline, or skills.</p>
       </div>
     );
   }
 
-  if (loading) {
-    return (
-      <div className="text-center py-16 text-gray-500">Searching…</div>
-    );
-  }
+  if (loading) return <SearchSkeleton />;
 
   if (users.length === 0) {
     return (
-      <div className="text-center py-16 text-gray-500">
-        No results found for &quot;{q}&quot;
+      <div className="bg-white rounded-lg shadow-card p-12 text-center">
+        <div className="text-5xl mb-4">😕</div>
+        <h3 className="text-lg font-semibold text-linkedin-text mb-1">No results found</h3>
+        <p className="text-sm text-linkedin-text-secondary">No results for &quot;{q}&quot;. Try different keywords.</p>
       </div>
     );
   }
 
   return (
     <div>
-      <p className="text-sm text-gray-500 mb-4">
+      <p className="text-sm text-linkedin-text-secondary mb-4">
         {users.length} result{users.length !== 1 ? "s" : ""} for &quot;{q}&quot;
       </p>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {users.map((user) => (
           <UserCard key={user.id} user={user} />
         ))}
@@ -69,11 +70,12 @@ function SearchResults() {
 
 export default function SearchPage() {
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Search</h1>
-      <Suspense fallback={<div className="text-center py-16 text-gray-500">Loading…</div>}>
-        <SearchResults />
-      </Suspense>
+    <div className="min-h-screen bg-linkedin-bg">
+      <div className="max-w-[1128px] mx-auto px-4 py-6">
+        <Suspense fallback={<SearchSkeleton />}>
+          <SearchResults />
+        </Suspense>
+      </div>
     </div>
   );
 }

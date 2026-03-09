@@ -27,6 +27,7 @@ services:
       DATABASE_URL: "postgresql://postgres:postgres@db:5432/linkedin_clone?schema=public"
       NEXTAUTH_SECRET: "change-me-in-production"
       NEXTAUTH_URL: "http://localhost:3000"
+      SEED_DB: "true"
     depends_on:
       db:
         condition: service_healthy

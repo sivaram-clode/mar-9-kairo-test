@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useToast } from "@/components/ui/Toast";
 
 type ConnectionState = "none" | "pending" | "connected" | "self";
 
 export default function ConnectButton({ targetUserId }: { targetUserId: string }) {
   const [state, setState] = useState<ConnectionState>("none");
   const [loading, setLoading] = useState(true);
+  const { showToast } = useToast();
 
   useEffect(() => {
     fetch(`/api/connections/status?userId=${targetUserId}`)
@@ -26,6 +28,9 @@ export default function ConnectButton({ targetUserId }: { targetUserId: string }
     });
     if (res.ok) {
       setState("pending");
+      showToast("Connection request sent");
+    } else {
+      showToast("Failed to send connection request", "error");
     }
     setLoading(false);
   };
@@ -34,7 +39,7 @@ export default function ConnectButton({ targetUserId }: { targetUserId: string }
 
   if (loading) {
     return (
-      <button disabled className="px-4 py-2 bg-gray-200 text-gray-500 rounded-full text-sm">
+      <button disabled className="px-5 py-1.5 bg-linkedin-bg text-linkedin-text-tertiary rounded-full text-sm font-semibold">
         ...
       </button>
     );
@@ -42,16 +47,18 @@ export default function ConnectButton({ targetUserId }: { targetUserId: string }
 
   if (state === "connected") {
     return (
-      <span className="px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-medium">
-        ✓ Connected
+      <span className="inline-flex items-center gap-1.5 px-5 py-1.5 border border-linkedin-border text-linkedin-text-secondary rounded-full text-sm font-semibold">
+        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
+        Connected
       </span>
     );
   }
 
   if (state === "pending") {
     return (
-      <span className="px-4 py-2 bg-yellow-100 text-yellow-700 rounded-full text-sm font-medium">
-        ⏳ Pending
+      <span className="inline-flex items-center gap-1.5 px-5 py-1.5 border border-linkedin-border text-linkedin-text-secondary rounded-full text-sm font-semibold">
+        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>
+        Pending
       </span>
     );
   }
@@ -59,9 +66,10 @@ export default function ConnectButton({ targetUserId }: { targetUserId: string }
   return (
     <button
       onClick={handleConnect}
-      className="px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-medium hover:bg-blue-700 transition"
+      className="inline-flex items-center gap-1.5 px-5 py-1.5 bg-linkedin-blue text-white rounded-full text-sm font-semibold hover:bg-linkedin-blue-hover transition"
     >
-      + Connect
+      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+      Connect
     </button>
   );
 }

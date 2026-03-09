@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useToast } from "@/components/ui/Toast";
 import CommentCard from "./CommentCard";
 
 interface Comment {
@@ -19,6 +20,7 @@ export default function CommentSection({ postId }: CommentSectionProps) {
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
+  const { showToast } = useToast();
 
   useEffect(() => {
     fetchComments();
@@ -52,6 +54,7 @@ export default function CommentSection({ postId }: CommentSectionProps) {
         const comment = await res.json();
         setComments((prev) => [...prev, comment]);
         setContent("");
+        showToast("Comment added");
       }
     } finally {
       setLoading(false);
@@ -59,32 +62,33 @@ export default function CommentSection({ postId }: CommentSectionProps) {
   };
 
   return (
-    <div className="border-t border-gray-100 mt-3 pt-3">
-      {fetching ? (
-        <p className="text-sm text-gray-400">Loading comments...</p>
-      ) : (
-        <>
-          {comments.map((comment) => (
-            <CommentCard key={comment.id} comment={comment} />
-          ))}
-        </>
-      )}
-      <form onSubmit={handleSubmit} className="flex gap-2 mt-2">
+    <div className="pt-3">
+      <form onSubmit={handleSubmit} className="flex gap-2 mb-3">
         <input
           type="text"
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="Write a comment..."
-          className="flex-1 border border-gray-200 rounded-full px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Add a comment…"
+          className="flex-1 border border-linkedin-border rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-linkedin-blue placeholder-linkedin-text-tertiary"
         />
         <button
           type="submit"
           disabled={!content.trim() || loading}
-          className="text-blue-600 font-medium text-sm hover:text-blue-700 disabled:opacity-50"
+          className="text-linkedin-blue font-semibold text-sm hover:bg-linkedin-blue-light px-3 py-1 rounded-full disabled:opacity-50 disabled:cursor-not-allowed transition"
         >
           Post
         </button>
       </form>
+      {fetching ? (
+        <div className="space-y-2">
+          <div className="skeleton h-12 w-full rounded" />
+          <div className="skeleton h-12 w-full rounded" />
+        </div>
+      ) : (
+        comments.map((comment) => (
+          <CommentCard key={comment.id} comment={comment} />
+        ))
+      )}
     </div>
   );
 }

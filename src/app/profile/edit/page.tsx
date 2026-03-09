@@ -4,41 +4,15 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import ProfileEditForm from "@/components/profile/ProfileEditForm";
-
-interface FormSection {
-  title: string;
-  fields: Array<{ name: string; label: string; placeholder: string }>;
-}
-
-const experienceFields: FormSection = {
-  title: "Add Experience",
-  fields: [
-    { name: "title", label: "Title", placeholder: "e.g. Software Engineer" },
-    { name: "company", label: "Company", placeholder: "e.g. Acme Corp" },
-    { name: "startDate", label: "Start Date", placeholder: "" },
-    { name: "endDate", label: "End Date (leave empty if current)", placeholder: "" },
-    { name: "description", label: "Description", placeholder: "What did you do?" },
-  ],
-};
-
-const educationFields: FormSection = {
-  title: "Add Education",
-  fields: [
-    { name: "school", label: "School", placeholder: "e.g. MIT" },
-    { name: "degree", label: "Degree", placeholder: "e.g. Bachelor's" },
-    { name: "field", label: "Field of Study", placeholder: "e.g. Computer Science" },
-    { name: "startDate", label: "Start Date", placeholder: "" },
-    { name: "endDate", label: "End Date", placeholder: "" },
-  ],
-};
+import { useToast } from "@/components/ui/Toast";
 
 export default function ProfileEditPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { showToast } = useToast();
   const [profile, setProfile] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Sub-form states
   const [expForm, setExpForm] = useState<Record<string, string>>({});
   const [eduForm, setEduForm] = useState<Record<string, string>>({});
   const [skillName, setSkillName] = useState("");
@@ -47,46 +21,34 @@ export default function ProfileEditPage() {
   const userId = (session?.user as { id?: string })?.id;
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/auth/signin");
-      return;
-    }
+    if (status === "unauthenticated") { router.push("/auth/signin"); return; }
     if (userId) {
-      fetch(`/api/users/${userId}`)
-        .then((r) => r.json())
-        .then((data) => {
-          setProfile(data);
-          setLoading(false);
-        });
+      fetch(`/api/users/${userId}`).then((r) => r.json()).then((data) => { setProfile(data); setLoading(false); });
     }
   }, [userId, status]);
+
+  const refreshProfile = async () => {
+    const res = await fetch(`/api/users/${userId}`);
+    setProfile(await res.json());
+  };
 
   const handleAddExperience = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting("exp");
-    await fetch(`/api/users/${userId}/experience`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(expForm),
-    });
+    await fetch(`/api/users/${userId}/experience`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(expForm) });
     setExpForm({});
-    // Refresh
-    const res = await fetch(`/api/users/${userId}`);
-    setProfile(await res.json());
+    await refreshProfile();
+    showToast("Experience added");
     setSubmitting("");
   };
 
   const handleAddEducation = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting("edu");
-    await fetch(`/api/users/${userId}/education`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(eduForm),
-    });
+    await fetch(`/api/users/${userId}/education`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(eduForm) });
     setEduForm({});
-    const res = await fetch(`/api/users/${userId}`);
-    setProfile(await res.json());
+    await refreshProfile();
+    showToast("Education added");
     setSubmitting("");
   };
 
@@ -94,95 +56,35 @@ export default function ProfileEditPage() {
     e.preventDefault();
     if (!skillName.trim()) return;
     setSubmitting("skill");
-    await fetch(`/api/users/${userId}/skills`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: skillName }),
-    });
+    await fetch(`/api/users/${userId}/skills`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: skillName }) });
     setSkillName("");
-    const res = await fetch(`/api/users/${userId}`);
-    setProfile(await res.json());
+    await refreshProfile();
+    showToast("Skill added");
     setSubmitting("");
   };
 
   if (loading || !profile) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <p className="text-gray-500">Loading...</p>
+      <div className="min-h-screen bg-linkedin-bg flex items-center justify-center">
+        <div className="skeleton h-8 w-40" />
       </div>
     );
   }
 
-  const renderSubForm = (
-    section: FormSection,
-    form: Record<string, string>,
-    setForm: (v: Record<string, string>) => void,
-    onSubmit: (e: React.FormEvent) => void,
-    key: string
-  ) => (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">{section.title}</h2>
-      <form onSubmit={onSubmit} className="space-y-3">
-        {section.fields.map((f) => (
-          <div key={f.name}>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {f.label}
-            </label>
-            {f.name === "description" ? (
-              <textarea
-                value={form[f.name] || ""}
-                onChange={(e) => setForm({ ...form, [f.name]: e.target.value })}
-                className="w-full border rounded-lg px-3 py-2 text-gray-900"
-                placeholder={f.placeholder}
-                rows={3}
-              />
-            ) : f.name.includes("Date") ? (
-              <input
-                type="date"
-                value={form[f.name] || ""}
-                onChange={(e) => setForm({ ...form, [f.name]: e.target.value })}
-                className="w-full border rounded-lg px-3 py-2 text-gray-900"
-              />
-            ) : (
-              <input
-                type="text"
-                value={form[f.name] || ""}
-                onChange={(e) => setForm({ ...form, [f.name]: e.target.value })}
-                className="w-full border rounded-lg px-3 py-2 text-gray-900"
-                placeholder={f.placeholder}
-              />
-            )}
-          </div>
-        ))}
-        <button
-          type="submit"
-          disabled={submitting === key}
-          className="px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-        >
-          {submitting === key ? "Adding..." : "Add"}
-        </button>
-      </form>
-    </div>
-  );
+  const inputClass = "w-full border border-linkedin-border rounded-lg px-3 py-2.5 text-sm text-linkedin-text focus:outline-none focus:ring-2 focus:ring-linkedin-blue focus:border-transparent";
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="max-w-3xl mx-auto py-8 px-4 space-y-6">
+    <div className="min-h-screen bg-linkedin-bg">
+      <div className="max-w-[800px] mx-auto py-6 px-4 space-y-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-900">Edit Profile</h1>
-          <button
-            onClick={() => router.push(`/profile/${userId}`)}
-            className="text-blue-600 hover:underline text-sm"
-          >
+          <h1 className="text-xl font-bold text-linkedin-text">Edit Profile</h1>
+          <button onClick={() => router.push(`/profile/${userId}`)} className="text-linkedin-blue hover:underline text-sm font-semibold">
             View profile →
           </button>
         </div>
 
-        {/* Basic info */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Basic Information
-          </h2>
+        <div className="bg-white rounded-lg shadow-card p-6">
+          <h2 className="text-base font-semibold text-linkedin-text mb-4">Basic Information</h2>
           <ProfileEditForm
             userId={userId!}
             initialData={profile as { name: string; headline?: string | null; avatar?: string | null; summary?: string | null; location?: string | null }}
@@ -191,28 +93,46 @@ export default function ProfileEditPage() {
         </div>
 
         {/* Experience */}
-        {renderSubForm(experienceFields, expForm, setExpForm, handleAddExperience, "exp")}
+        <div className="bg-white rounded-lg shadow-card p-6">
+          <h2 className="text-base font-semibold text-linkedin-text mb-4">Add Experience</h2>
+          <form onSubmit={handleAddExperience} className="space-y-3">
+            <input type="text" value={expForm.title || ""} onChange={(e) => setExpForm({ ...expForm, title: e.target.value })} className={inputClass} placeholder="Title (e.g. Software Engineer)" required />
+            <input type="text" value={expForm.company || ""} onChange={(e) => setExpForm({ ...expForm, company: e.target.value })} className={inputClass} placeholder="Company" required />
+            <div className="grid grid-cols-2 gap-3">
+              <input type="date" value={expForm.startDate || ""} onChange={(e) => setExpForm({ ...expForm, startDate: e.target.value })} className={inputClass} required />
+              <input type="date" value={expForm.endDate || ""} onChange={(e) => setExpForm({ ...expForm, endDate: e.target.value })} className={inputClass} placeholder="End Date" />
+            </div>
+            <textarea value={expForm.description || ""} onChange={(e) => setExpForm({ ...expForm, description: e.target.value })} className={inputClass} placeholder="Description (optional)" rows={3} />
+            <button type="submit" disabled={submitting === "exp"} className="px-5 py-2 bg-linkedin-blue text-white rounded-full text-sm font-semibold hover:bg-linkedin-blue-hover disabled:opacity-50 transition">
+              {submitting === "exp" ? "Adding..." : "Add Experience"}
+            </button>
+          </form>
+        </div>
 
         {/* Education */}
-        {renderSubForm(educationFields, eduForm, setEduForm, handleAddEducation, "edu")}
+        <div className="bg-white rounded-lg shadow-card p-6">
+          <h2 className="text-base font-semibold text-linkedin-text mb-4">Add Education</h2>
+          <form onSubmit={handleAddEducation} className="space-y-3">
+            <input type="text" value={eduForm.school || ""} onChange={(e) => setEduForm({ ...eduForm, school: e.target.value })} className={inputClass} placeholder="School" required />
+            <input type="text" value={eduForm.degree || ""} onChange={(e) => setEduForm({ ...eduForm, degree: e.target.value })} className={inputClass} placeholder="Degree" required />
+            <input type="text" value={eduForm.field || ""} onChange={(e) => setEduForm({ ...eduForm, field: e.target.value })} className={inputClass} placeholder="Field of Study" required />
+            <div className="grid grid-cols-2 gap-3">
+              <input type="date" value={eduForm.startDate || ""} onChange={(e) => setEduForm({ ...eduForm, startDate: e.target.value })} className={inputClass} required />
+              <input type="date" value={eduForm.endDate || ""} onChange={(e) => setEduForm({ ...eduForm, endDate: e.target.value })} className={inputClass} />
+            </div>
+            <button type="submit" disabled={submitting === "edu"} className="px-5 py-2 bg-linkedin-blue text-white rounded-full text-sm font-semibold hover:bg-linkedin-blue-hover disabled:opacity-50 transition">
+              {submitting === "edu" ? "Adding..." : "Add Education"}
+            </button>
+          </form>
+        </div>
 
         {/* Skills */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Add Skill</h2>
-          <form onSubmit={handleAddSkill} className="flex gap-2">
-            <input
-              type="text"
-              value={skillName}
-              onChange={(e) => setSkillName(e.target.value)}
-              className="flex-1 border rounded-lg px-3 py-2 text-gray-900"
-              placeholder="e.g. TypeScript"
-            />
-            <button
-              type="submit"
-              disabled={submitting === "skill"}
-              className="px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-            >
-              Add
+        <div className="bg-white rounded-lg shadow-card p-6">
+          <h2 className="text-base font-semibold text-linkedin-text mb-4">Add Skill</h2>
+          <form onSubmit={handleAddSkill} className="flex gap-3">
+            <input type="text" value={skillName} onChange={(e) => setSkillName(e.target.value)} className={`flex-1 ${inputClass}`} placeholder="e.g. TypeScript" />
+            <button type="submit" disabled={submitting === "skill"} className="px-5 py-2 bg-linkedin-blue text-white rounded-full text-sm font-semibold hover:bg-linkedin-blue-hover disabled:opacity-50 transition whitespace-nowrap">
+              {submitting === "skill" ? "Adding..." : "Add Skill"}
             </button>
           </form>
         </div>

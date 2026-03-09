@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import ConnectionCard from "@/components/connections/ConnectionCard";
 import PendingRequestCard from "@/components/connections/PendingRequestCard";
+import { NetworkSkeleton } from "@/components/ui/Skeleton";
 
 interface ConnectionUser {
   id: string;
@@ -52,23 +53,24 @@ export default function NetworkPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <p className="text-gray-500">Loading network...</p>
+      <div className="min-h-screen bg-linkedin-bg">
+        <div className="max-w-[1128px] mx-auto py-6 px-4">
+          <div className="skeleton h-8 w-40 mb-6" />
+          <NetworkSkeleton />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="max-w-3xl mx-auto py-8 px-4 space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900">My Network</h1>
-
+    <div className="min-h-screen bg-linkedin-bg">
+      <div className="max-w-[1128px] mx-auto py-6 px-4 space-y-4">
         {pending.length > 0 && (
-          <section>
-            <h2 className="text-lg font-semibold text-gray-800 mb-3">
-              Pending Requests ({pending.length})
+          <div className="bg-white rounded-lg shadow-card p-5">
+            <h2 className="text-base font-semibold text-linkedin-text mb-4">
+              Invitations ({pending.length})
             </h2>
-            <div className="space-y-3">
+            <div className="divide-y divide-linkedin-border">
               {pending.map((p) => (
                 <PendingRequestCard
                   key={p.id}
@@ -78,23 +80,29 @@ export default function NetworkPage() {
                 />
               ))}
             </div>
-          </section>
+          </div>
         )}
 
-        <section>
-          <h2 className="text-lg font-semibold text-gray-800 mb-3">
+        <div className="bg-white rounded-lg shadow-card p-5">
+          <h2 className="text-base font-semibold text-linkedin-text mb-4">
             Connections ({connections.length})
           </h2>
           {connections.length === 0 ? (
-            <p className="text-gray-500">No connections yet.</p>
+            <div className="text-center py-8">
+              <div className="text-5xl mb-3">👥</div>
+              <h3 className="text-lg font-semibold text-linkedin-text mb-1">No connections yet</h3>
+              <p className="text-sm text-linkedin-text-secondary">
+                Search for people you know and send them a connection request.
+              </p>
+            </div>
           ) : (
-            <div className="space-y-3">
+            <div className="divide-y divide-linkedin-border">
               {connections.map((c) => (
                 <ConnectionCard key={c.connectionId} user={c.user} />
               ))}
             </div>
           )}
-        </section>
+        </div>
       </div>
     </div>
   );
