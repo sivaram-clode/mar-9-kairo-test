@@ -7,6 +7,7 @@ import ProfileHeader from "@/components/profile/ProfileHeader";
 import ExperienceCard from "@/components/profile/ExperienceCard";
 import EducationCard from "@/components/profile/EducationCard";
 import SkillsList from "@/components/profile/SkillsList";
+import ConnectButton from "@/components/connections/ConnectButton";
 
 interface UserProfile {
   id: string;
@@ -107,6 +108,12 @@ export default function ProfilePage() {
           isOwner={!!isOwner}
           onEdit={() => router.push("/profile/edit")}
         />
+
+        {!isOwner && session?.user && (
+          <div className="flex justify-end -mt-2">
+            <ConnectButton targetUserId={userId} />
+          </div>
+        )}
 
         <ExperienceCard
           experiences={profile.experiences}
